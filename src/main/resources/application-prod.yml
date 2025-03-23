@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://prod-db-server:5432/proddb
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+
+cleanup:
+  scheduler:
+    enabled: true
+    cron: "0 0 3 * * *"  # 3 AM daily
+    dryRun: false

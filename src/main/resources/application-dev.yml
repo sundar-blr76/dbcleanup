@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/devdb
+    username: devuser
+    password: devpass
+
+cleanup:
+  scheduler:
+    enabled: false
+    dryRun: true

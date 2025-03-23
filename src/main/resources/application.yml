@@ -1,0 +1,87 @@
+spring:
+  application:
+    name: database-cleanup-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/yourdb
+    username: postgres
+    password: postgres
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+cleanup:
+  # Entity configurations
+  entities:
+    - name: Order
+      table: orders
+      criteria:
+        - field: created_at
+          condition: "< CURRENT_DATE - INTERVAL '1 YEAR'"
+        - field: status
+          condition: "IN ('COMPLETED', 'CANCELLED')"
+          operator: AND
+      related:
+        - entity: OrderItem
+          table: order_items
+          join: order_id
+          foreignKey: order_id
+          cascadeDelete: true
+        - entity: Payment
+          table: payments
+          join: order_id
+          foreignKey: order_id
+          cascadeDelete: true
+      backup:
+        enabled: true
+        table: orders_backup
+      transactionBoundary: true
+
+    - name: Customer
+      table: customers
+      criteria:
+        - field: last_active_date
+          condition: "< CURRENT_DATE - INTERVAL '2 YEARS'"
+        - field: account_status
+          condition: "= 'CLOSED'"
+          operator: AND
+      related:
+        - entity: CustomerAddress
+          table: customer_addresses
+          join: customer_id
+          foreignKey: customer_id
+          cascadeDelete: true
+      backup:
+        enabled: true
+        table: customers_backup
+      transactionBoundary: true
+
+  # Distribution settings for parallel processing
+  distribution:
+    enabled: true
+    workerCount: 4
+    partitionBy: id
+    batchSize: 1000
+
+  # Task logging configuration
+  taskLogging:
+    enabled: true
+    table: cleanup_task_log
+    schema: public
+    retentionDays: 90
+
+  # Scheduler configuration
+  scheduler:
+    enabled: false
+    cron: "0 0 2 * * *"  # 2 AM daily
+    dryRun: false
+
+logging:
+  level:
+    org.example.dbcleanup: INFO
+    org.springframework: WARN
