@@ -46,8 +46,7 @@ public class CleanupService {
                 .map(EntityConfig::getName)
                 .collect(Collectors.toList());
 
-        String taskId = taskLogRepository.logTaskStart(
-                "ANALYSIS", initiator, entityNames, true);
+        String taskId = taskLogRepository.logTaskStart(                "ANALYSIS", initiator, entityNames, true);
 
         CleanupResult result = new CleanupResult();
         result.setTaskId(taskId);

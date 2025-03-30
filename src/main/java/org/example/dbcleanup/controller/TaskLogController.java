@@ -21,8 +21,7 @@ public class TaskLogController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CleanupTask>> getRecentTasks(
-            @RequestParam(required = false, defaultValue = "10") int limit) {
+    public ResponseEntity<List<CleanupTask>> getRecentTasks(@RequestParam(required = false, defaultValue = "10") int limit) {
         logger.info("Getting {} recent tasks", limit);
         return ResponseEntity.ok(cleanupService.getRecentTasks(limit));
     }
