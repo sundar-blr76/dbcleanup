@@ -8,6 +8,10 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class DatabaseCleanupApplicationTests {
 
+    public DatabaseCleanupApplicationTests() {
+        super();
+    }
+
     @Test
     void contextLoads() {
         // This test verifies that the Spring context loads successfully
