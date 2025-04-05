@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class CleanupService {
-    private static final Logger logger = LoggerFactory.getLogger(CleanupService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CleanupService.class);
 
     private final CleanupProperties properties;
     private final CleanupRepository cleanupRepository;
@@ -36,22 +36,18 @@ public class CleanupService {
         this.distributedCleanupService = distributedCleanupService;
     }
 
-    public CleanupService() {
-        super();
-    }
-
     /**
      * Perform analysis only (dry run) without actual deletions
      */
     @Transactional(readOnly = true)
     public CleanupResult analyzeCleanupCandidates(String initiator) {
-        logger.info("Starting cleanup analysis (dry run)");
+        LOGGER.info("Starting cleanup analysis (dry run)");
 
         List<String> entityNames = properties.getEntities().stream()
                 .map(EntityConfig::getName)
                 .collect(Collectors.toList());
 
-        String taskId = taskLogRepository.logTaskStart(                "ANALYSIS", initiator, entityNames, true);
+        String taskId = taskLogRepository.logTaskStart("ANALYSIS", initiator, entityNames, true);
 
         CleanupResult result = new CleanupResult();
         result.setTaskId(taskId);
@@ -61,7 +57,7 @@ public class CleanupService {
                 List<String> candidateIds = cleanupRepository.findCandidateIds(entityConfig);
                 result.addCandidates(entityConfig.getName(), candidateIds);
 
-                logger.info("Found {} cleanup candidates for entity {}",
+                LOGGER.info("Found {} cleanup candidates for entity {}",
                         candidateIds.size(), entityConfig.getName());
             }
 
@@ -73,7 +69,7 @@ public class CleanupService {
 
         } catch (Exception e) {
             String errorMsg = "Error during cleanup analysis: " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             taskLogRepository.logTaskError(taskId, errorMsg);
             throw new CleanupException(errorMsg, e);
         }
@@ -84,58 +80,70 @@ public class CleanupService {
      */
     @Transactional
     public CleanupResult executeCleanup(String initiator, boolean dryRun) {
-        logger.info("Starting cleanup execution, dryRun={}", dryRun);
-
-        // If distributed mode is enabled, delegate to distributed service
-        if (properties.getDistribution() != null &&
-                properties.getDistribution().isEnabled() && !dryRun) {
-            return distributedCleanupService.executeDistributedCleanup(initiator, dryRun);
-        }
-
+        LOGGER.info("Starting cleanup execution. Initiator: {}, Dry run: {}", initiator, dryRun);
+        
         List<String> entityNames = properties.getEntities().stream()
                 .map(EntityConfig::getName)
                 .collect(Collectors.toList());
-
-        String taskId = taskLogRepository.logTaskStart(
-                "CLEANUP", initiator, entityNames, dryRun);
-
+        
+        String taskId = taskLogRepository.logTaskStart("CLEANUP", initiator, entityNames, dryRun);
+        
         CleanupResult result = new CleanupResult();
         result.setTaskId(taskId);
+        
+        try {
+            if (properties.getDistribution() != null 
+                    && properties.getDistribution().getWorkerCount() > 1) {
+                return distributedCleanupService.executeDistributedCleanup(initiator, dryRun);
+            }
+            
+            return executeLocalCleanup(taskId, initiator, dryRun);
+        } catch (Exception e) {
+            LOGGER.error("Error during cleanup execution", e);
+            taskLogRepository.logTaskError(taskId, e.getMessage());
+            throw e;
+        }
+    }
 
+    /**
+     * Execute cleanup locally (non-distributed)
+     */
+    private CleanupResult executeLocalCleanup(String taskId, String initiator, boolean dryRun) {
+        LOGGER.info("Executing local cleanup. Initiator: {}, Dry run: {}", initiator, dryRun);
+        
+        CleanupResult result = new CleanupResult();
+        result.setTaskId(taskId);
+        
         try {
             for (EntityConfig entityConfig : properties.getEntities()) {
-                // Find candidate IDs
                 List<String> candidateIds = cleanupRepository.findCandidateIds(entityConfig);
                 result.addCandidates(entityConfig.getName(), candidateIds);
-
-                if (candidateIds.isEmpty()) {
-                    logger.info("No cleanup candidates for entity {}", entityConfig.getName());
-                    continue;
-                }
-
-                // Backup if configured and not dry run
-                if (entityConfig.getBackup() != null &&
-                        entityConfig.getBackup().isEnabled() && !dryRun) {
-                    int backedUp = cleanupRepository.backupCandidatesDirect(entityConfig, taskId);
-                    result.setBackedUpCount(entityConfig.getName(), backedUp);
-                }
-
-                // Delete if not dry run
-                if (!dryRun) {
+                
+                if (dryRun) {
+                    LOGGER.info("Found {} cleanup candidates for entity {}",
+                            candidateIds.size(), entityConfig.getName());
+                } else {
+                    // First backup if enabled
+                    if (entityConfig.getBackup() != null && entityConfig.getBackup().isEnabled()) {
+                        int backedUp = cleanupRepository.backupCandidatesDirect(entityConfig, taskId);
+                        result.setBackedUpCount(entityConfig.getName(), backedUp);
+                    }
+                    
+                    // Then delete
                     int deleted = cleanupRepository.deleteCandidatesDirect(entityConfig);
                     result.setDeletedCount(entityConfig.getName(), deleted);
+                    LOGGER.info("Deleted {} records for entity {}",
+                            deleted, entityConfig.getName());
                 }
             }
-
+            
             result.complete();
-            taskLogRepository.logTaskCompletion(
-                    taskId, result.getTotalCandidateCount(), result.getTotalDeletedCount());
-
+            taskLogRepository.logTaskCompletion(taskId, result.getTotalCandidateCount(), result.getTotalDeletedCount());
             return result;
-
+            
         } catch (Exception e) {
-            String errorMsg = "Error during cleanup execution: " + e.getMessage();
-            logger.error(errorMsg, e);
+            String errorMsg = "Error during local cleanup execution: " + e.getMessage();
+            LOGGER.error(errorMsg, e);
             taskLogRepository.logTaskError(taskId, errorMsg);
             throw new CleanupException(errorMsg, e);
         }
@@ -146,7 +154,7 @@ public class CleanupService {
      */
     @Transactional
     public int reinstateBackups(String entityName, List<String> backupIds, String initiator) {
-        logger.info("Reinstating {} backup records for entity {}", backupIds.size(), entityName);
+        LOGGER.info("Reinstating {} backup records for entity {}", backupIds.size(), entityName);
 
         if (backupIds == null || backupIds.isEmpty()) {
             return 0;
@@ -164,7 +172,7 @@ public class CleanupService {
 
         } catch (Exception e) {
             String errorMsg = "Error reinstating backups: " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             taskLogRepository.logTaskError(taskId, errorMsg);
             throw new CleanupException(errorMsg, e);
         }

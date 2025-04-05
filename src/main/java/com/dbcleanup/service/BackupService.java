@@ -17,7 +17,7 @@ import java.util.Map;
 
 @Service
 public class BackupService {
-    private static final Logger logger = LoggerFactory.getLogger(BackupService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
 
     private final JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
@@ -41,7 +41,7 @@ public class BackupService {
 
         String backupTable = entityConfig.getBackup().getTable();
         if (backupTable == null || backupTable.isEmpty()) {
-            logger.warn("No backup table specified for entity {}", entityConfig.getName());
+            LOGGER.warn("No backup table specified for entity {}", entityConfig.getName());
             return 0;
         }
 
@@ -49,7 +49,7 @@ public class BackupService {
             int backedUp;
 
             if (candidateIds.isEmpty()) {
-                logger.info("No candidates to backup for entity {}", entityConfig.getName());
+                LOGGER.info("No candidates to backup for entity {}", entityConfig.getName());
                 return 0;
             }
 
@@ -61,11 +61,11 @@ public class BackupService {
                 backedUp = jdbcTemplate.update(backupQuery);
             }
 
-            logger.info("Backed up {} records for entity {}", backedUp, entityConfig.getName());
+            LOGGER.info("Backed up {} records for entity {}", backedUp, entityConfig.getName());
             return backedUp;
         } catch (Exception e) {
             String errorMsg = "Error backing up candidates for " + entityConfig.getName() + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }
@@ -89,7 +89,7 @@ public class BackupService {
             int backedUp = namedParameterJdbcTemplate.update(backupQuery, params);
             totalBackedUp += backedUp;
 
-            logger.debug("Backed up batch {} of {} for entity {}: {} records",
+            LOGGER.debug("Backed up batch {} of {} for entity {}: {} records",
                     (i / batchSize) + 1, (candidateIds.size() / batchSize) + 1,
                     entityConfig.getName(), backedUp);
         }
@@ -111,7 +111,7 @@ public class BackupService {
             return jdbcTemplate.queryForList(sql, taskId, limit);
         } catch (Exception e) {
             String errorMsg = "Error retrieving backup metadata for " + entityName + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }
@@ -128,7 +128,7 @@ public class BackupService {
             return jdbcTemplate.queryForMap(sql, backupId);
         } catch (Exception e) {
             String errorMsg = "Error retrieving backup data for ID " + backupId + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }
@@ -187,12 +187,12 @@ public class BackupService {
 
             taskLogRepository.logTaskCompletion(taskId, backupIds.size(), reinstated);
 
-            logger.info("Reinstated {} records for entity {}", reinstated, entityName);
+            LOGGER.info("Reinstated {} records for entity {}", reinstated, entityName);
             return reinstated;
 
         } catch (Exception e) {
             String errorMsg = "Error reinstating backups: " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             taskLogRepository.logTaskError(taskId, errorMsg);
             throw new CleanupException(errorMsg, e);
         }
@@ -210,11 +210,11 @@ public class BackupService {
 
         try {
             int purged = jdbcTemplate.update(purgeQuery);
-            logger.info("Purged {} old backup records for entity {}", purged, entityName);
+            LOGGER.info("Purged {} old backup records for entity {}", purged, entityName);
             return purged;
         } catch (Exception e) {
             String errorMsg = "Error purging old backups for " + entityName + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }

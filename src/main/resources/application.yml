@@ -2,7 +2,7 @@ spring:
   application:
     name: database-cleanup-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/yourdb
+    url: jdbc:postgresql://localhost:5432/sample_application
     username: postgres
     password: postgres
     hikari:
@@ -78,7 +78,8 @@ cleanup:
   # Scheduler configuration
   scheduler:
     enabled: false
-    cron: "0 0 2 * * *"  # 2 AM daily
+    # Run at 2 AM daily
+    cron: "0 0 2 * * *"
     dryRun: false
 
 logging:

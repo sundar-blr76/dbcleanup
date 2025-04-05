@@ -1,16 +1,20 @@
 package com.dbcleanup.model;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 public class PartialCleanupResult {
+    public PartialCleanupResult() {
+        super();
+    }
+    
     private final Map<String, List<String>> candidateIds = new HashMap<>();
     private final Map<String, Integer> deletedCounts = new HashMap<>();
     private final Map<String, Integer> backedUpCounts = new HashMap<>();
     private final Map<String, String> errors = new HashMap<>();
-
-    public PartialCleanupResult() {
-        super();
-    }
 
     public void addCandidates(String entityName, List<String> entityCandidateIds) {
         candidateIds.put(entityName, new ArrayList<>(entityCandidateIds));

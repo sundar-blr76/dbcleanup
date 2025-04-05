@@ -1,13 +1,11 @@
 package com.dbcleanup.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
 
 @ConfigurationProperties(prefix = "cleanup")
-@Component
 public class CleanupProperties {
     private List<EntityConfig> entities;
     private DistributionConfig distribution;
@@ -52,7 +50,19 @@ public class CleanupProperties {
     }
 
     public enum JoinType {
-        INNER, LEFT, RIGHT
+        INNER("INNER"),
+        LEFT("LEFT"),
+        RIGHT("RIGHT");
+
+        private final String value;
+
+        JoinType(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
     }
 
     public static class EntityConfig {

@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class DistributedCleanupService {
-    private static final Logger logger = LoggerFactory.getLogger(DistributedCleanupService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DistributedCleanupService.class);
 
     private final CleanupProperties properties;
     private final CleanupRepository cleanupRepository;
@@ -35,12 +35,8 @@ public class DistributedCleanupService {
         this.taskLogRepository = taskLogRepository;
     }
 
-    public DistributedCleanupService() {
-        super();
-    }
-
     public CleanupResult executeDistributedCleanup(String initiator, boolean dryRun) {
-        logger.info("Starting distributed cleanup, dryRun={}", dryRun);
+        LOGGER.info("Starting distributed cleanup, dryRun={}", dryRun);
 
         List<String> entityNames = properties.getEntities().stream()
                 .map(EntityConfig::getName)
@@ -73,7 +69,7 @@ public class DistributedCleanupService {
 
         } catch (Exception e) {
             String errorMsg = "Error during distributed cleanup: " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             taskLogRepository.logTaskError(taskId, errorMsg);
             throw new RuntimeException(errorMsg, e);
         }
@@ -84,7 +80,7 @@ public class DistributedCleanupService {
     public CompletableFuture<PartialCleanupResult> processEntityAsync(
             EntityConfig entityConfig, String taskId, boolean dryRun) {
 
-        logger.info("Processing entity {} asynchronously", entityConfig.getName());
+        LOGGER.info("Processing entity {} asynchronously", entityConfig.getName());
 
         PartialCleanupResult partialResult = new PartialCleanupResult();
 
@@ -94,7 +90,7 @@ public class DistributedCleanupService {
             partialResult.addCandidates(entityConfig.getName(), candidateIds);
 
             if (candidateIds.isEmpty()) {
-                logger.info("No cleanup candidates for entity {}", entityConfig.getName());
+                LOGGER.info("No cleanup candidates for entity {}", entityConfig.getName());
                 return CompletableFuture.completedFuture(partialResult);
             }
 
@@ -115,7 +111,7 @@ public class DistributedCleanupService {
 
         } catch (Exception e) {
             String errorMsg = "Error processing entity " + entityConfig.getName() + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             partialResult.setError(entityConfig.getName(), errorMsg);
             return CompletableFuture.completedFuture(partialResult);
         }

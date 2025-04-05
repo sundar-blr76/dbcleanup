@@ -10,6 +10,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,7 +25,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.*;
 
 public class CleanupServiceTest {
 
@@ -47,7 +54,7 @@ public class CleanupServiceTest {
     }
 
     @Test
-    void analyzeCleanupCandidates_ShouldReturnCandidates() {
+    public void shouldReturnCandidatesWhenAnalyzingCleanup() {
         // Arrange
         EntityConfig entity1 = new EntityConfig();
         entity1.setName("Order");
@@ -81,7 +88,7 @@ public class CleanupServiceTest {
     }
 
     @Test
-    void executeCleanup_WhenDryRun_ShouldNotDeleteOrBackup() {
+    public void shouldNotDeleteOrBackupWhenExecutingCleanupInDryRun() {
         // Arrange
         EntityConfig entity = new EntityConfig();
         entity.setName("Order");
@@ -114,7 +121,7 @@ public class CleanupServiceTest {
     }
 
     @Test
-    void executeCleanup_WhenNotDryRun_ShouldBackupAndDelete() {
+    public void shouldBackupAndDeleteWhenExecutingCleanupNotInDryRun() {
         // Arrange
         EntityConfig entity = new EntityConfig();
         entity.setName("Order");

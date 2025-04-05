@@ -16,14 +16,40 @@ public class CleanupTask {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime completedAt;
 
-    private String status;
+    private Status status;
     private boolean dryRun;
     private Integer candidatesCount;
     private Integer deletedCount;
     private String errorMessage;
 
+    public enum Status {
+        PENDING("PENDING"),
+        IN_PROGRESS("IN_PROGRESS"),
+        COMPLETED("COMPLETED"),
+        FAILED("FAILED");
+
+        private final String value;
+
+        Status(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
     public CleanupTask() {
         super();
+    }
+
+    public CleanupTask(String taskId, LocalDateTime startedAt, LocalDateTime completedAt, Status status, String errorMessage) {
+        super();
+        this.taskId = taskId;
+        this.startedAt = startedAt;
+        this.completedAt = completedAt;
+        this.status = status;
+        this.errorMessage = errorMessage;
     }
 
     // Getters and setters
@@ -75,11 +101,11 @@ public class CleanupTask {
         this.completedAt = completedAt;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 

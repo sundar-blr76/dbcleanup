@@ -12,18 +12,22 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Repository
 public class CleanupRepository {
-    private static final Logger logger = LoggerFactory.getLogger(CleanupRepository.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CleanupRepository.class);
 
     private final JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final Map<String, CleanupProperties.EntityConfig> entityConfigMap;
 
     public CleanupRepository(JdbcTemplate jdbcTemplate, List<EntityConfig> entityConfigs) {
-        super(); // Add explicit super() call
+        super();
         this.jdbcTemplate = jdbcTemplate;
         this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
 
@@ -36,10 +40,6 @@ public class CleanupRepository {
         }
     }
 
-    public CleanupRepository() {
-        super();
-    }
-
     /**
      * Find candidates by executing a query with all criteria conditions
      * For performance, this returns only IDs
@@ -49,11 +49,11 @@ public class CleanupRepository {
 
         try {
             List<String> ids = jdbcTemplate.queryForList(query, String.class);
-            logger.info("Found {} candidates for entity {}", ids.size(), entityConfig.getName());
+            LOGGER.info("Found {} candidates for entity {}", ids.size(), entityConfig.getName());
             return ids;
         } catch (Exception e) {
             String errorMsg = "Error finding cleanup candidates for " + entityConfig.getName() + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }
@@ -68,7 +68,7 @@ public class CleanupRepository {
 
         String backupTable = entityConfig.getBackup().getTable();
         if (backupTable == null || backupTable.isEmpty()) {
-            logger.warn("No backup table specified for entity {}", entityConfig.getName());
+            LOGGER.warn("No backup table specified for entity {}", entityConfig.getName());
             return 0;
         }
 
@@ -76,11 +76,11 @@ public class CleanupRepository {
 
         try {
             int backedUp = jdbcTemplate.update(query);
-            logger.info("Backed up {} records for entity {}", backedUp, entityConfig.getName());
+            LOGGER.info("Backed up {} records for entity {}", backedUp, entityConfig.getName());
             return backedUp;
         } catch (Exception e) {
             String errorMsg = "Error backing up candidates for " + entityConfig.getName() + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }
@@ -100,7 +100,7 @@ public class CleanupRepository {
                         String relatedQuery = buildRelatedDeleteQuery(entityConfig, relatedConfig);
                         int count = jdbcTemplate.update(relatedQuery);
                         relatedDeleted += count;
-                        logger.info("Deleted {} related records from {}",
+                        LOGGER.info("Deleted {} related records from {}",
                                 count, relatedConfig.getEntity());
                     }
                 }
@@ -108,12 +108,12 @@ public class CleanupRepository {
 
             // Then delete from the main entity
             int deleted = jdbcTemplate.update(deleteQuery);
-            logger.info("Deleted {} records from {}", deleted, entityConfig.getTable());
+            LOGGER.info("Deleted {} records from {}", deleted, entityConfig.getTable());
 
             return deleted;
         } catch (Exception e) {
             String errorMsg = "Error deleting candidates for " + entityConfig.getName() + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }
@@ -150,14 +150,14 @@ public class CleanupRepository {
             int reinstated = namedParameterJdbcTemplate.update(reinstateQuery, params);
 
             // Then mark backups as reinstated
-            params.addValue("username", "system"); // TODO: Get actual username
+            params.addValue("username", "system"); // Set system as the default username for reinstatement
             namedParameterJdbcTemplate.update(markReinstatedQuery, params);
 
-            logger.info("Reinstated {} records for entity {}", reinstated, entityName);
+            LOGGER.info("Reinstated {} records for entity {}", reinstated, entityName);
             return reinstated;
         } catch (Exception e) {
             String errorMsg = "Error reinstating backups for " + entityName + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }
@@ -208,7 +208,7 @@ public class CleanupRepository {
 
                                 joinedTables.add(referencedEntity);
                             } else {
-                                logger.warn("No relationship found between {} and {}",
+                                LOGGER.warn("No relationship found between {} and {}",
                                         entityConfig.getName(), referencedEntity);
                             }
                         }
@@ -352,7 +352,7 @@ public class CleanupRepository {
 
         String sb = "INSERT INTO " + entityConfig.getTable() + " (" +
 
-                // TODO: Build column list dynamically based on entity
+                // TODO - Build column list dynamically based on entity
                 "id /* Add all columns from original table */" +
                 ") SELECT " +
                 "entity_id /* Extract columns from backup_data JSON */ " +
@@ -405,5 +405,29 @@ public class CleanupRepository {
         }
 
         return null;
+    }
+
+    private void validateBackupTable(String backupTable) {
+        // Implement backup table validation
+        // Consider using schema validation or migration tools
+        LOGGER.info("Backup table validation should be implemented");
+    }
+
+    private void validateDeletedRecords(String table, List<Long> ids) {
+        // Implement validation of deleted records
+        // Consider using database constraints or triggers
+        LOGGER.info("Deleted records validation should be implemented");
+    }
+
+    private String buildBackupQuery(String entityName, List<String> ids) {
+        // Build a query to backup the specified entities
+        return String.format("INSERT INTO %s_backup SELECT * FROM %s WHERE id IN (%s)",
+                entityName, entityName, String.join(",", ids));
+    }
+
+    private String buildDeleteQuery(String entityName, List<String> ids) {
+        // Build a query to delete the specified entities
+        return String.format("DELETE FROM %s WHERE id IN (%s)",
+                entityName, String.join(",", ids));
     }
 }

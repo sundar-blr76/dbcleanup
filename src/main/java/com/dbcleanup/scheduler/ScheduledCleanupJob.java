@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(prefix = "cleanup.scheduler", name = "enabled", havingValue = "true")
 public class ScheduledCleanupJob {
-    private static final Logger logger = LoggerFactory.getLogger(ScheduledCleanupJob.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ScheduledCleanupJob.class);
 
     private final CleanupService cleanupService;
     private final CleanupProperties properties;
@@ -22,13 +22,9 @@ public class ScheduledCleanupJob {
         this.properties = properties;
     }
 
-    public ScheduledCleanupJob() {
-        super();
-    }
-
-    @Scheduled(cron = "${cleanup.scheduler.cron:0 0 2 * * *}") // Default: 2 AM daily
-    public void scheduledCleanup() {
-        logger.info("Running scheduled cleanup job");
+    @Scheduled(cron = "${cleanup.scheduler.cron}")
+    public void executeScheduledCleanup() {
+        LOGGER.info("Running scheduled cleanup job");
 
         boolean dryRun = properties.getScheduler().isDryRun();
         cleanupService.executeCleanup("scheduler", dryRun);

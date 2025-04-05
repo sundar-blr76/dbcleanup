@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Repository
 public class TaskLogRepository {
-    private static final Logger logger = LoggerFactory.getLogger(TaskLogRepository.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskLogRepository.class);
 
     private final JdbcTemplate jdbcTemplate;
     private final CleanupProperties.TaskLoggingConfig config;
@@ -30,10 +30,6 @@ public class TaskLogRepository {
         this.config = config;
         this.taskRowMapper = new CleanupTaskRowMapper();
         ensureTaskLogTableExists();
-    }
-
-    public TaskLogRepository() {
-        super();
     }
 
     public String logTaskStart(String taskType, String initiator, List<String> entityNames, boolean dryRun) {
@@ -58,13 +54,13 @@ public class TaskLogRepository {
                     null  // errorMessage
             );
 
-            logger.info("Logged task start: taskId={}, type={}, initiator={}",
+            LOGGER.info("Logged task start: taskId={}, type={}, initiator={}",
                     taskId, taskType, initiator);
 
             return taskId;
 
         } catch (DataAccessException e) {
-            logger.error("Error logging task start: {}", e.getMessage(), e);
+            LOGGER.error("Error logging task start: {}", e.getMessage(), e);
             return taskId;
         }
     }
@@ -88,11 +84,11 @@ public class TaskLogRepository {
                     taskId
             );
 
-            logger.info("Logged task completion: taskId={}, candidates={}, deleted={}",
+            LOGGER.info("Logged task completion: taskId={}, candidates={}, deleted={}",
                     taskId, candidatesCount, deletedCount);
 
         } catch (DataAccessException e) {
-            logger.error("Error logging task completion: {}", e.getMessage(), e);
+            LOGGER.error("Error logging task completion: {}", e.getMessage(), e);
         }
     }
 
@@ -113,10 +109,10 @@ public class TaskLogRepository {
                     taskId
             );
 
-            logger.info("Logged task error: taskId={}", taskId);
+            LOGGER.info("Logged task error: taskId={}", taskId);
 
         } catch (DataAccessException e) {
-            logger.error("Error logging task error: {}", e.getMessage(), e);
+            LOGGER.error("Error logging task error: {}", e.getMessage(), e);
         }
     }
 
@@ -128,7 +124,7 @@ public class TaskLogRepository {
             return jdbcTemplate.query(sql, taskRowMapper, limit);
         } catch (DataAccessException e) {
             String errorMsg = "Error retrieving recent tasks: " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }
@@ -141,14 +137,14 @@ public class TaskLogRepository {
             return jdbcTemplate.queryForObject(sql, taskRowMapper, taskId);
         } catch (DataAccessException e) {
             String errorMsg = "Error retrieving task with id " + taskId + ": " + e.getMessage();
-            logger.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             throw new CleanupException(errorMsg, e);
         }
     }
 
     private void ensureTaskLogTableExists() {
         // This would be better handled by schema.sql or Flyway/Liquibase in a real app
-        logger.info("Task log table should be created by schema.sql or database migration");
+        LOGGER.info("Task log table should be created by schema.sql or database migration");
     }
 
     private String getTaskLogTableName() {
@@ -166,30 +162,19 @@ public class TaskLogRepository {
     }
 
     private static class CleanupTaskRowMapper implements RowMapper<CleanupTask> {
-        public CleanupTaskRowMapper() {
+        CleanupTaskRowMapper() {
             super();
         }
-        
+
         @Override
         public CleanupTask mapRow(ResultSet rs, int rowNum) throws SQLException {
-            CleanupTask task = new CleanupTask();
-            task.setTaskId(rs.getString("task_id"));
-            task.setTaskType(rs.getString("task_type"));
-            task.setInitiator(rs.getString("initiator"));
-            task.setEntities(rs.getString("entities").split(","));
-            task.setStartedAt(rs.getTimestamp("started_at").toLocalDateTime());
-            task.setStatus(rs.getString("status"));
-            task.setDryRun(rs.getBoolean("dry_run"));
-
-            if (rs.getTimestamp("completed_at") != null) {
-                task.setCompletedAt(rs.getTimestamp("completed_at").toLocalDateTime());
-            }
-
-            task.setCandidatesCount(rs.getObject("candidates_count", Integer.class));
-            task.setDeletedCount(rs.getObject("deleted_count", Integer.class));
-            task.setErrorMessage(rs.getString("error_message"));
-
-            return task;
+            return new CleanupTask(
+                String.valueOf(rs.getLong("id")),
+                rs.getTimestamp("start_time").toLocalDateTime(),
+                rs.getTimestamp("end_time") != null ? rs.getTimestamp("end_time").toLocalDateTime() : null,
+                CleanupTask.Status.valueOf(rs.getString("status")),
+                rs.getString("details")
+            );
         }
     }
 }

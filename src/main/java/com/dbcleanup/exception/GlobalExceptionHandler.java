@@ -12,7 +12,7 @@ import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     public GlobalExceptionHandler() {
         super();
@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CleanupException.class)
     public ResponseEntity<Map<String, String>> handleCleanupException(CleanupException ex) {
-        logger.error("Cleanup exception: {}", ex.getMessage(), ex);
+        LOGGER.error("Cleanup exception: {}", ex.getMessage(), ex);
 
         Map<String, String> response = new HashMap<>();
         response.put("error", "Cleanup operation failed");
@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
-        logger.error("Unexpected exception: {}", ex.getMessage(), ex);
+        LOGGER.error("Unexpected exception: {}", ex.getMessage(), ex);
 
         Map<String, String> response = new HashMap<>();
         response.put("error", "An unexpected error occurred");
