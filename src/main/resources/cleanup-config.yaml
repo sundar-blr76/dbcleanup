@@ -1,0 +1,46 @@
+database:
+  url: "jdbc:postgresql://localhost:5432/your_database"
+  username: "your_username"
+  password: "your_password"
+  maxPoolSize: 10
+  minIdle: 5
+  connectionTimeout: 30000
+  idleTimeout: 600000
+
+cleanup:
+  entities:
+    - name: "rule_log"
+      criteria:
+        - whereClause: "check_date < :expirationDate AND status = :status"
+          parameters:
+            - name: "expirationDate"
+              value: "2024-01-01"
+              type: "DATE"
+            - name: "status"
+              value: "COMPLETED"
+              type: "STRING"
+      maxCleanupPercentage: 25
+      maxRuntimeMinutes: 60
+      relationships:
+        - type: "CHILD"
+          entity: "rule_log_contribution"
+          foreignKey: "check_id"
+      backup:
+        enabled: true
+        retentionDays: 90
+
+    - name: "rule_log_contribution"
+      criteria:
+        - whereClause: "check_id IN (SELECT check_id FROM rule_log WHERE check_date < :expirationDate AND status = :status)"
+          parameters:
+            - name: "expirationDate"
+              value: "2024-01-01"
+              type: "DATE"
+            - name: "status"
+              value: "COMPLETED"
+              type: "STRING"
+      maxCleanupPercentage: 25
+      maxRuntimeMinutes: 30
+      backup:
+        enabled: true
+        retentionDays: 90 
