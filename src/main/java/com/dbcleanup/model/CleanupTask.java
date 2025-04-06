@@ -31,6 +31,7 @@ public class CleanupTask {
         private final String value;
 
         Status(String value) {
+            super(value, ordinal());
             this.value = value;
         }
 
