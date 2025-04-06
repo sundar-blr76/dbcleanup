@@ -558,3 +558,77 @@ cleanup:
 ### Parameter Types Supported
 
 // ... rest of existing code ... 
+
+## Containerized Deployment
+
+This application can be deployed using Docker and Docker Compose.
+
+### Prerequisites
+
+- Docker
+- Docker Compose
+
+### Quick Start
+
+1. Clone the repository
+2. Run the containerized application:
+
+```bash
+./run-container.sh
+```
+
+This will:
+- Create necessary directories for backups and logs
+- Build and start the application and its dependencies (PostgreSQL and Redis)
+- Check if the application is running successfully
+
+### Manual Deployment
+
+If you prefer to run the commands manually:
+
+```bash
+# Create necessary directories
+mkdir -p backups logs
+
+# Build and run the containers
+docker-compose up --build -d
+
+# Check the logs
+docker-compose logs -f app
+```
+
+### Accessing the Application
+
+- API: http://localhost:8080/api
+- Health Check: http://localhost:8080/api/actuator/health
+
+## Configuration
+
+The application can be configured through environment variables or by modifying the application.properties file.
+
+### Environment Variables
+
+- `SPRING_DATASOURCE_URL`: Database connection URL
+- `SPRING_DATASOURCE_USERNAME`: Database username
+- `SPRING_DATASOURCE_PASSWORD`: Database password
+- `SPRING_REDIS_HOST`: Redis host
+
+## Development
+
+### Building the Application
+
+```bash
+./gradlew build
+```
+
+### Running Tests
+
+```bash
+./gradlew test
+```
+
+### Running Locally
+
+```bash
+./gradlew bootRun
+``` 
